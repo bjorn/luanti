@@ -10,6 +10,7 @@
 
 #include "IVideoDriver.h"
 #include "IFileSystem.h"
+#include "S3DVertex.h"
 #include "SB3DStructs.h"
 #include "SkinnedMesh.h"
 #include "SSkinMeshBuffer.h"
@@ -18,6 +19,7 @@
 #include "vector3d.h"
 
 #include <algorithm>
+#include <optional>
 
 #ifdef _DEBUG
 #define _B3D_READER_DEBUG
