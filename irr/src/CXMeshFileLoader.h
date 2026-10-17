@@ -38,7 +38,25 @@ public:
 	//! If you no longer need the mesh, you should call IAnimatedMesh::drop().
 	//! See IReferenceCounted::drop() for more information.
 	IAnimatedMesh *createMesh(io::IReadFile *file) override;
+};
 
+//! Per-load worker holding all transient state for a single .x file. The
+//! registered CXMeshFileLoader creates a fresh instance for each createMesh()
+//! call and discards it when the load finishes, so no state can leak from one
+//! load into the next.
+class XMeshReader
+{
+public:
+	IAnimatedMesh *createMesh(io::IReadFile *file);
+
+	~XMeshReader()
+	{
+		delete[] Buffer;
+		for (u32 i = 0; i < Meshes.size(); ++i)
+			delete Meshes[i];
+	}
+
+private:
 	struct SXMesh
 	{
 		SXMesh() :
@@ -203,28 +221,28 @@ private:
 	SkinnedMesh::SJoint *addJoint(SkinnedMesh::SJoint *parent, std::string name);
 	void addKeys(u16 joint_id, SkinnedMesh::Keys &&keys);
 
-	SkinnedMeshBuilder AnimatedMesh;
+	SkinnedMeshBuilder AnimatedMesh{SkinnedMesh::SourceFormat::X};
 	/// Mapping from joint ID to index in joint keys
 	std::vector<std::optional<u16>> JointKeysIdx;
 
-	c8 *Buffer;
-	const c8 *P;
-	c8 *End;
+	c8 *Buffer = nullptr;
+	const c8 *P = nullptr;
+	c8 *End = nullptr;
 	// counter for number arrays in binary format
-	u32 BinaryNumCount;
-	u32 Line;
+	u32 BinaryNumCount = 0;
+	u32 Line = 0;
 	io::path FilePath;
 
-	bool ErrorState;
+	bool ErrorState = false;
 
-	SkinnedMesh::SJoint *CurFrame;
+	SkinnedMesh::SJoint *CurFrame = nullptr;
 
 	core::array<SXMesh *> Meshes;
 
-	u32 MajorVersion;
-	u32 MinorVersion;
-	bool BinaryFormat;
-	c8 FloatSize;
+	u32 MajorVersion = 0;
+	u32 MinorVersion = 0;
+	bool BinaryFormat = false;
+	c8 FloatSize = 0;
 };
 
 } // end namespace scene

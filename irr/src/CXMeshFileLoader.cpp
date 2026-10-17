@@ -30,18 +30,7 @@ namespace scene
 {
 
 //! Constructor
-CXMeshFileLoader::CXMeshFileLoader(scene::ISceneManager *smgr) :
-		Buffer(nullptr),
-		P(nullptr),
-		End(nullptr),
-		BinaryNumCount(0),
-		Line(0),
-		ErrorState(false),
-		CurFrame(nullptr),
-		MajorVersion(0),
-		MinorVersion(0),
-		BinaryFormat(false),
-		FloatSize(0)
+CXMeshFileLoader::CXMeshFileLoader(scene::ISceneManager *smgr)
 {}
 
 //! returns true if the file maybe is able to be loaded by this class
@@ -60,11 +49,15 @@ IAnimatedMesh *CXMeshFileLoader::createMesh(io::IReadFile *file)
 	if (!file)
 		return nullptr;
 
+	XMeshReader reader;
+	return reader.createMesh(file);
+}
+
+IAnimatedMesh *XMeshReader::createMesh(io::IReadFile *file)
+{
 #ifdef _XREADER_DEBUG
 	u32 time = os::Timer::getRealTime();
 #endif
-
-	AnimatedMesh = SkinnedMeshBuilder(SkinnedMesh::SourceFormat::X);
 
 	SkinnedMesh *res = nullptr;
 	if (load(file)) {
@@ -79,30 +72,10 @@ IAnimatedMesh *CXMeshFileLoader::createMesh(io::IReadFile *file)
 	tmpString += "ms";
 	os::Printer::log(tmpString.c_str());
 #endif
-	// Clean up
-
-	MajorVersion = 0;
-	MinorVersion = 0;
-	BinaryFormat = 0;
-	BinaryNumCount = 0;
-	FloatSize = 0;
-	P = 0;
-	End = 0;
-	CurFrame = 0;
-	ErrorState = false;
-	JointKeysIdx.clear();
-
-	delete[] Buffer;
-	Buffer = 0;
-
-	for (u32 i = 0; i < Meshes.size(); ++i)
-		delete Meshes[i];
-	Meshes.clear();
-
 	return res;
 }
 
-bool CXMeshFileLoader::load(io::IReadFile *file)
+bool XMeshReader::load(io::IReadFile *file)
 {
 	if (!readFileIntoMemory(file))
 		return false;
@@ -251,7 +224,7 @@ bool CXMeshFileLoader::load(io::IReadFile *file)
 }
 
 //! Reads file into memory
-bool CXMeshFileLoader::readFileIntoMemory(io::IReadFile *file)
+bool XMeshReader::readFileIntoMemory(io::IReadFile *file)
 {
 	const long size = file->getSize();
 	if (size < 12) {
@@ -317,7 +290,7 @@ bool CXMeshFileLoader::readFileIntoMemory(io::IReadFile *file)
 }
 
 //! Parses the file
-bool CXMeshFileLoader::parseFile()
+bool XMeshReader::parseFile()
 {
 	while (parseDataObject()) {
 		// loop
@@ -327,7 +300,7 @@ bool CXMeshFileLoader::parseFile()
 }
 
 //! Parses the next Data object in the file
-bool CXMeshFileLoader::parseDataObject()
+bool XMeshReader::parseDataObject()
 {
 	core::stringc objectName = getNextToken();
 
@@ -364,7 +337,7 @@ bool CXMeshFileLoader::parseDataObject()
 	return parseUnknownDataObject();
 }
 
-bool CXMeshFileLoader::parseDataObjectTemplate()
+bool XMeshReader::parseDataObjectTemplate()
 {
 #ifdef _XREADER_DEBUG
 	os::Printer::log("CXFileReader: Reading template", ELL_DEBUG);
@@ -397,7 +370,7 @@ bool CXMeshFileLoader::parseDataObjectTemplate()
 	return true;
 }
 
-bool CXMeshFileLoader::parseDataObjectFrame(SkinnedMesh::SJoint *Parent)
+bool XMeshReader::parseDataObjectFrame(SkinnedMesh::SJoint *Parent)
 {
 #ifdef _XREADER_DEBUG
 	os::Printer::log("CXFileReader: Reading frame", ELL_DEBUG);
@@ -491,7 +464,7 @@ bool CXMeshFileLoader::parseDataObjectFrame(SkinnedMesh::SJoint *Parent)
 	return true;
 }
 
-bool CXMeshFileLoader::parseDataObjectTransformationMatrix(core::matrix4 &mat)
+bool XMeshReader::parseDataObjectTransformationMatrix(core::matrix4 &mat)
 {
 #ifdef _XREADER_DEBUG
 	os::Printer::log("CXFileReader: Reading Transformation Matrix", ELL_DEBUG);
@@ -519,7 +492,7 @@ bool CXMeshFileLoader::parseDataObjectTransformationMatrix(core::matrix4 &mat)
 	return true;
 }
 
-bool CXMeshFileLoader::parseDataObjectMesh(SXMesh &mesh)
+bool XMeshReader::parseDataObjectMesh(SXMesh &mesh)
 {
 	core::stringc name;
 
@@ -841,7 +814,7 @@ bool CXMeshFileLoader::parseDataObjectMesh(SXMesh &mesh)
 	return true;
 }
 
-bool CXMeshFileLoader::parseDataObjectSkinWeights(SXMesh &mesh)
+bool XMeshReader::parseDataObjectSkinWeights(SXMesh &mesh)
 {
 #ifdef _XREADER_DEBUG
 	os::Printer::log("CXFileReader: Reading mesh skin weights", ELL_DEBUG);
@@ -913,7 +886,7 @@ bool CXMeshFileLoader::parseDataObjectSkinWeights(SXMesh &mesh)
 	return true;
 }
 
-bool CXMeshFileLoader::parseDataObjectSkinMeshHeader(SXMesh &mesh)
+bool XMeshReader::parseDataObjectSkinMeshHeader(SXMesh &mesh)
 {
 #ifdef _XREADER_DEBUG
 	os::Printer::log("CXFileReader: Reading skin mesh header", ELL_DEBUG);
@@ -941,7 +914,7 @@ bool CXMeshFileLoader::parseDataObjectSkinMeshHeader(SXMesh &mesh)
 	return true;
 }
 
-bool CXMeshFileLoader::parseDataObjectMeshNormals(SXMesh &mesh)
+bool XMeshReader::parseDataObjectMeshNormals(SXMesh &mesh)
 {
 #ifdef _XREADER_DEBUG
 	os::Printer::log("CXFileReader: reading mesh normals", ELL_DEBUG);
@@ -1035,7 +1008,7 @@ bool CXMeshFileLoader::parseDataObjectMeshNormals(SXMesh &mesh)
 	return true;
 }
 
-bool CXMeshFileLoader::parseDataObjectMeshTextureCoords(SXMesh &mesh)
+bool XMeshReader::parseDataObjectMeshTextureCoords(SXMesh &mesh)
 {
 #ifdef _XREADER_DEBUG
 	os::Printer::log("CXFileReader: reading mesh texture coordinates", ELL_DEBUG);
@@ -1071,7 +1044,7 @@ bool CXMeshFileLoader::parseDataObjectMeshTextureCoords(SXMesh &mesh)
 	return true;
 }
 
-bool CXMeshFileLoader::parseDataObjectMeshVertexColors(SXMesh &mesh)
+bool XMeshReader::parseDataObjectMeshVertexColors(SXMesh &mesh)
 {
 #ifdef _XREADER_DEBUG
 	os::Printer::log("CXFileReader: reading mesh vertex colors", ELL_DEBUG);
@@ -1110,7 +1083,7 @@ bool CXMeshFileLoader::parseDataObjectMeshVertexColors(SXMesh &mesh)
 	return true;
 }
 
-bool CXMeshFileLoader::parseDataObjectMeshMaterialList(SXMesh &mesh)
+bool XMeshReader::parseDataObjectMeshMaterialList(SXMesh &mesh)
 {
 #ifdef _XREADER_DEBUG
 	os::Printer::log("CXFileReader: Reading mesh material list", ELL_DEBUG);
@@ -1189,7 +1162,7 @@ bool CXMeshFileLoader::parseDataObjectMeshMaterialList(SXMesh &mesh)
 	return true;
 }
 
-bool CXMeshFileLoader::parseDataObjectAnimationSet()
+bool XMeshReader::parseDataObjectAnimationSet()
 {
 #ifdef _XREADER_DEBUG
 	os::Printer::log("CXFileReader: Reading animation set", ELL_DEBUG);
@@ -1225,7 +1198,7 @@ bool CXMeshFileLoader::parseDataObjectAnimationSet()
 	return true;
 }
 
-bool CXMeshFileLoader::parseDataObjectAnimationTicksPerSecond()
+bool XMeshReader::parseDataObjectAnimationTicksPerSecond()
 {
 #ifdef _XREADER_DEBUG
 	os::Printer::log("CXFileReader: reading AnimationTicksPerSecond", ELL_DEBUG);
@@ -1254,7 +1227,7 @@ bool CXMeshFileLoader::parseDataObjectAnimationTicksPerSecond()
 	return true;
 }
 
-bool CXMeshFileLoader::parseDataObjectAnimation()
+bool XMeshReader::parseDataObjectAnimation()
 {
 #ifdef _XREADER_DEBUG
 	os::Printer::log("CXFileReader: reading animation", ELL_DEBUG);
@@ -1326,7 +1299,7 @@ bool CXMeshFileLoader::parseDataObjectAnimation()
 	return true;
 }
 
-bool CXMeshFileLoader::parseDataObjectAnimationKey(SkinnedMesh::Keys &keys)
+bool XMeshReader::parseDataObjectAnimationKey(SkinnedMesh::Keys &keys)
 {
 #ifdef _XREADER_DEBUG
 	os::Printer::log("CXFileReader: reading animation key", ELL_DEBUG);
@@ -1467,7 +1440,7 @@ bool CXMeshFileLoader::parseDataObjectAnimationKey(SkinnedMesh::Keys &keys)
 	return true;
 }
 
-bool CXMeshFileLoader::parseDataObjectTextureFilename(core::stringc &texturename)
+bool XMeshReader::parseDataObjectTextureFilename(core::stringc &texturename)
 {
 #ifdef _XREADER_DEBUG
 	os::Printer::log("CXFileReader: reading texture filename", ELL_DEBUG);
@@ -1494,7 +1467,7 @@ bool CXMeshFileLoader::parseDataObjectTextureFilename(core::stringc &texturename
 	return true;
 }
 
-bool CXMeshFileLoader::parseUnknownDataObject()
+bool XMeshReader::parseUnknownDataObject()
 {
 	// find opening delimiter
 	while (true) {
@@ -1527,13 +1500,13 @@ bool CXMeshFileLoader::parseUnknownDataObject()
 }
 
 //! checks for closing curly brace, returns false if not there
-bool CXMeshFileLoader::checkForClosingBrace()
+bool XMeshReader::checkForClosingBrace()
 {
 	return (getNextToken() == "}");
 }
 
 //! checks for one following semicolon, returns false if not there
-bool CXMeshFileLoader::checkForOneFollowingSemicolons()
+bool XMeshReader::checkForOneFollowingSemicolons()
 {
 	if (BinaryFormat)
 		return true;
@@ -1547,7 +1520,7 @@ bool CXMeshFileLoader::checkForOneFollowingSemicolons()
 }
 
 //! checks for two following semicolons, returns false if they are not there
-bool CXMeshFileLoader::checkForTwoFollowingSemicolons()
+bool XMeshReader::checkForTwoFollowingSemicolons()
 {
 	if (BinaryFormat)
 		return true;
@@ -1565,7 +1538,7 @@ bool CXMeshFileLoader::checkForTwoFollowingSemicolons()
 //! reads header of dataobject including the opening brace.
 //! returns false if error happened, and writes name of object
 //! if there is one
-bool CXMeshFileLoader::readHeadOfDataObject(core::stringc *outname)
+bool XMeshReader::readHeadOfDataObject(core::stringc *outname)
 {
 	core::stringc nameOrBrace = getNextToken();
 	if (nameOrBrace != "{") {
@@ -1580,7 +1553,7 @@ bool CXMeshFileLoader::readHeadOfDataObject(core::stringc *outname)
 }
 
 //! returns next parseable token. Returns empty string if no token there
-core::stringc CXMeshFileLoader::getNextToken()
+core::stringc XMeshReader::getNextToken()
 {
 	core::stringc s;
 
@@ -1698,7 +1671,7 @@ core::stringc CXMeshFileLoader::getNextToken()
 
 //! places pointer to next begin of a token, which must be a number,
 // and ignores comments
-void CXMeshFileLoader::findNextNoneWhiteSpaceNumber()
+void XMeshReader::findNextNoneWhiteSpaceNumber()
 {
 	if (BinaryFormat)
 		return;
@@ -1714,7 +1687,7 @@ void CXMeshFileLoader::findNextNoneWhiteSpaceNumber()
 }
 
 // places pointer to next begin of a token, and ignores comments
-void CXMeshFileLoader::findNextNoneWhiteSpace()
+void XMeshReader::findNextNoneWhiteSpace()
 {
 	if (BinaryFormat)
 		return;
@@ -1738,7 +1711,7 @@ void CXMeshFileLoader::findNextNoneWhiteSpace()
 }
 
 //! reads a x file style string
-bool CXMeshFileLoader::getNextTokenAsString(core::stringc &out)
+bool XMeshReader::getNextTokenAsString(core::stringc &out)
 {
 	if (BinaryFormat) {
 		out = getNextToken();
@@ -1768,7 +1741,7 @@ bool CXMeshFileLoader::getNextTokenAsString(core::stringc &out)
 	return true;
 }
 
-void CXMeshFileLoader::readUntilEndOfLine()
+void XMeshReader::readUntilEndOfLine()
 {
 	if (BinaryFormat)
 		return;
@@ -1784,7 +1757,7 @@ void CXMeshFileLoader::readUntilEndOfLine()
 	}
 }
 
-u32 CXMeshFileLoader::readInt()
+u32 XMeshReader::readInt()
 {
 	if (BinaryFormat) {
 		if (!BinaryNumCount) {
@@ -1805,7 +1778,7 @@ u32 CXMeshFileLoader::readInt()
 	}
 }
 
-f32 CXMeshFileLoader::readFloat()
+f32 XMeshReader::readFloat()
 {
 	if (BinaryFormat) {
 		if (!BinaryNumCount) {
@@ -1825,7 +1798,7 @@ f32 CXMeshFileLoader::readFloat()
 	return ftmp;
 }
 
-core::stringc CXMeshFileLoader::readBinString()
+core::stringc XMeshReader::readBinString()
 {
 	auto len = readBinNum<u32>();
 	if (eof())
@@ -1837,7 +1810,7 @@ core::stringc CXMeshFileLoader::readBinString()
 }
 
 // read 2-dimensional vector. Stops at semicolon after second value for text file format
-bool CXMeshFileLoader::readVector2(core::vector2df &vec)
+bool XMeshReader::readVector2(core::vector2df &vec)
 {
 	vec.X = readFloat();
 	vec.Y = readFloat();
@@ -1845,7 +1818,7 @@ bool CXMeshFileLoader::readVector2(core::vector2df &vec)
 }
 
 // read 3-dimensional vector. Stops at semicolon after third value for text file format
-bool CXMeshFileLoader::readVector3(core::vector3df &vec)
+bool XMeshReader::readVector3(core::vector3df &vec)
 {
 	vec.X = readFloat();
 	vec.Y = readFloat();
@@ -1854,7 +1827,7 @@ bool CXMeshFileLoader::readVector3(core::vector3df &vec)
 }
 
 // read color without alpha value. Stops after second semicolon after blue value
-bool CXMeshFileLoader::readRGB(video::SColor &color)
+bool XMeshReader::readRGB(video::SColor &color)
 {
 	video::SColorf tmpColor;
 	tmpColor.r = readFloat();
@@ -1865,7 +1838,7 @@ bool CXMeshFileLoader::readRGB(video::SColor &color)
 }
 
 // read color with alpha value. Stops after second semicolon after blue value
-bool CXMeshFileLoader::readRGBA(video::SColor &color)
+bool XMeshReader::readRGBA(video::SColor &color)
 {
 	video::SColorf tmpColor;
 	tmpColor.r = readFloat();
@@ -1877,14 +1850,14 @@ bool CXMeshFileLoader::readRGBA(video::SColor &color)
 }
 
 // read matrix from list of floats
-bool CXMeshFileLoader::readMatrix(core::matrix4 &mat)
+bool XMeshReader::readMatrix(core::matrix4 &mat)
 {
 	for (u32 i = 0; i < 16; ++i)
 		mat[i] = readFloat();
 	return checkForOneFollowingSemicolons();
 }
 
-SkinnedMesh::SJoint *CXMeshFileLoader::addJoint(SkinnedMesh::SJoint *parent, std::string name)
+SkinnedMesh::SJoint *XMeshReader::addJoint(SkinnedMesh::SJoint *parent, std::string name)
 {
 	auto *joint = AnimatedMesh.addJoint(parent);
 	joint->Name = std::move(name);
@@ -1892,7 +1865,7 @@ SkinnedMesh::SJoint *CXMeshFileLoader::addJoint(SkinnedMesh::SJoint *parent, std
 	return joint;
 }
 
-void CXMeshFileLoader::addKeys(u16 joint_id, SkinnedMesh::Keys &&keys)
+void XMeshReader::addKeys(u16 joint_id, SkinnedMesh::Keys &&keys)
 {
 	auto &animation = AnimatedMesh.getSingleAnimation();
 	auto &joint_keys_idx = JointKeysIdx.at(joint_id);

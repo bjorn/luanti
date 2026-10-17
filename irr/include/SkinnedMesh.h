@@ -387,11 +387,6 @@ class SkinnedMeshBuilder {
 
 public:
 
-	// HACK the .x loader does not separate the "loader" class from an "extractor" class
-	// used and destroyed in a specific loading process (contrast with the .gltf and .b3d mesh loaders).
-	// This means we need an empty skinned mesh builder.
-	SkinnedMeshBuilder() {}
-
 	SkinnedMeshBuilder(SkinnedMesh::SourceFormat src_format)
 		: mesh(new SkinnedMesh(src_format))
 	{}
