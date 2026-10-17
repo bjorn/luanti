@@ -138,8 +138,6 @@ private:
 
 	bool parseDataObjectAnimationKey(SkinnedMesh::Keys &keys);
 
-	bool parseDataObjectTextureFilename(core::stringc &texturename);
-
 	bool parseUnknownDataObject();
 
 	//! places pointer to next begin of a token, and ignores comments
@@ -213,8 +211,6 @@ private:
 	bool readVector3(core::vector3df &vec);
 
 	bool readMatrix(core::matrix4 &mat);
-
-	bool readRGB(video::SColor &color);
 
 	bool readRGBA(video::SColor &color);
 

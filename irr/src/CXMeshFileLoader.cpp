@@ -1440,33 +1440,6 @@ bool XMeshReader::parseDataObjectAnimationKey(SkinnedMesh::Keys &keys)
 	return true;
 }
 
-bool XMeshReader::parseDataObjectTextureFilename(core::stringc &texturename)
-{
-#ifdef _XREADER_DEBUG
-	os::Printer::log("CXFileReader: reading texture filename", ELL_DEBUG);
-#endif
-
-	if (!readHeadOfDataObject()) {
-		os::Printer::log("No opening brace in Texture filename found in x file", ELL_WARNING);
-		os::Printer::log("Line", core::stringc(Line).c_str(), ELL_WARNING);
-		SET_ERR_AND_RETURN();
-	}
-
-	if (!getNextTokenAsString(texturename)) {
-		os::Printer::log("Unknown syntax while reading texture filename string in x file", ELL_WARNING);
-		os::Printer::log("Line", core::stringc(Line).c_str(), ELL_WARNING);
-		SET_ERR_AND_RETURN();
-	}
-
-	if (!checkForClosingBrace()) {
-		os::Printer::log("No closing brace in Texture filename found in x file", ELL_WARNING);
-		os::Printer::log("Line", core::stringc(Line).c_str(), ELL_WARNING);
-		SET_ERR_AND_RETURN();
-	}
-
-	return true;
-}
-
 bool XMeshReader::parseUnknownDataObject()
 {
 	// find opening delimiter
@@ -1824,17 +1797,6 @@ bool XMeshReader::readVector3(core::vector3df &vec)
 	vec.Y = readFloat();
 	vec.Z = readFloat();
 	return true;
-}
-
-// read color without alpha value. Stops after second semicolon after blue value
-bool XMeshReader::readRGB(video::SColor &color)
-{
-	video::SColorf tmpColor;
-	tmpColor.r = readFloat();
-	tmpColor.g = readFloat();
-	tmpColor.b = readFloat();
-	color = tmpColor.toSColor();
-	return checkForOneFollowingSemicolons();
 }
 
 // read color with alpha value. Stops after second semicolon after blue value
